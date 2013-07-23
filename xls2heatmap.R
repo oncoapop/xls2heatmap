@@ -25,8 +25,7 @@ setwd(dirname)
 # This is where the output of this R-script will be
 outpath <- dirname
 
-SA="SA501"
-
+SA="SA029_MS130708"
 
 #File names matching a pattern
 pat1=paste("*",SA,sep="")
@@ -59,18 +58,21 @@ rownames(ef) <- dflist[[2]]$target
 
 # Selecting only those position with at least 100 reads in the normal
 # Normal sample
+# Uncommet this section out if normal controls failed for some reason
 sample=colnames(ef)[1]
 ff <- ef[ef[, sample] > 100,]
 gf <- ff[complete.cases(ff),]
+# Select single cells positions (at least one read out in a sample)
+sel <- subset(ef[rowSums(!is.na(ef)) > 1,])
 
 reads=paste(SA,"reads.csv",sep="-")
-write.csv(gf, file=reads)
+write.csv(sel, file=reads)
 
 hmcols<-colorRampPalette(c("dark green","red"))(1000)
 readpdf=paste(SA,"reads.pdf",sep="-")
 pdf(readpdf, width=6, height=6)
 title=paste(SA, "reads", sep=" ")
-levelplot(gf, cex.axis=0.8, col.regions = hmcols, xlab="SNV positions", ylab="Samples", main=title, aspect="fill", cuts=1000)
+levelplot(sel, cex.axis=0.8, col.regions = hmcols, xlab="SNV positions", ylab="Samples", main=title, aspect="fill", cuts=1000)
 
 dev.off()
 
@@ -82,20 +84,28 @@ jf <- data.matrix(dflist[[1]][2:ncol(dflist[[2]])])
 # Put the ID back as rownames
 rownames(jf) <- dflist[[1]]$target
 
-# Selecting only those position with at least 100 reads in the normal
-ff <- jf[jf[, sample] > 0.2,]
-kf <- jf[complete.cases(jf),]
+# Selecting only those position with at least MAF > 0.2 in the normal
+# ff <- jf[jf[, sample] > 0.2,]
+# kf <- jf[complete.cases(jf),]
+self <- subset(jf[rowSums(!is.na(ef)) > 2,])
 
 freq=paste(SA,"freq.csv",sep="-")
-write.csv(kf, file=freq)
+write.csv(self, file=freq)
 
 hmcols<-colorRampPalette(c("dark green","red"))(1000)
 freqpdf=paste(SA,"freq.pdf",sep="-")
 pdf(freqpdf, width=6, height=6)
 title=paste(SA, "Alt. Allele Freq", sep=" ")
-levelplot(kf, cex.axis=0.8, col.regions = hmcols, xlab="SNV positions", ylab="Samples", main=title, aspect="fill", cuts=1000)
+levelplot(self, cex.axis=0.8, col.regions = hmcols, xlab="SNV positions", ylab="Samples", main=title, aspect="fill", cuts=1000, at=c(seq(0.2,1, by=0.1)))
 
 dev.off()
+
+freqpdf=paste(SA,"freq-clus.pdf",sep="-")
+pdf(freqpdf, width=6, height=6)
+reg2 = regHeatmap(self)
+plot(reg2)
+dev.off()
+
 
 
 #####################################################################################################
